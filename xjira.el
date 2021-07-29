@@ -86,7 +86,7 @@ Will insert the issue's number in the buffer and store the issue's details for l
 
 (defun xjira-get-captured-description ()
   "Get the last captured jira issue description."
-  (xjira--obj-or-null (replace-regexp-in-string "\r" "" (alist-get 'description xjira--org-capture-latest-issue-result))))
+  (replace-regexp-in-string "\r" "" (xjira--obj-or-null (alist-get 'description xjira--org-capture-latest-issue-result))))
 
 (defun xjira-get-captured-reporter ()
   "Get the last captured jira issue reporter."
