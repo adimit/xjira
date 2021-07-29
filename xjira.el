@@ -77,7 +77,8 @@ Will insert the issue's number in the buffer and store the issue's details for l
          (issue-number (concat project "-" (read-string (concat project "-")))))
     (unless xjira-auth (setq xjira-auth (read-string "Jira auth: ")))
     (setq xjira--org-capture-latest-issue-result
-          (xjira--get-issue issue-number xjira-auth))))
+          (xjira--get-issue issue-number xjira-auth)))
+  (xjira-get-captured-issue))
 
 (defun xjira-get-captured-issue ()
   "Get the last captured jira issue."
