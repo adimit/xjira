@@ -119,7 +119,7 @@ without inserting any text."
 
 (defun xjira-get-captured-title ()
   "Get the last captured jira issue title."
-  (xjira--obj-or-null 'title))
+  (xjira--get-last 'title))
 
 (provide 'xjira)
 ;;; xjira.el ends here
