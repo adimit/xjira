@@ -1,0 +1,10 @@
+#+TITLE: XJIRA
+
+A small Emacs package that allows you to define an entry in =org-capture-templates= that will fetch a Jira issue's information. Here's an example capture template:
+
+#+begin_src emacs-lisp
+("t" "Test" entry (file+headline my-org-work-file "Tasks")
+ "* TODO %(xjira-org-capture-issue \"KNUTH\") %(xjira-get-captured-issue) %(xjira-get-captured-title)\nSCHEDULED: %t\n:PROPERTIES:\n:REFERENCE: %(eval xjira-host)/browse/%(xjira-get-captured-issue)\n:Reporter: %(xjira-get-captured-reporter)\n:END:\n%?%(xjira-get-captured-description)")
+#+end_src
+
+This is very much a scratch-my-own-itch package and provided as-is. It does not have any dependencies.
