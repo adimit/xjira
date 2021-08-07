@@ -40,7 +40,30 @@
 ;;
 ;;; Code:
 
-;;; Private Utility:
+; Configuration:
+
+(defvar xjira--org-capture-latest-issue-result nil
+  "Stores the latest result of an org capture process.")
+
+(defvar xjira-host nil
+  "The protocol and host of your Jira instance, without a final slash, e.g. `http://my-jira'.")
+
+(defvar xjira-auth nil
+  "Your base64 encoded username:password string to access the Jira REST API.")
+
+; Private:
+
+(defun xjira--obj-or-null (obj)
+  "Return OBJ as is unless it is :null, in which case return the empty string."
+  (if (eq :null obj) "" obj))
+
+(defun xjira--get-last (symbol)
+  "Get SYMBOL from the last captured Jira ticket conveniently."
+  (xjira--obj-or-null (alist-get symbol xjira--org-capture-latest-issue-result)))
+
+(defun xjira--strip-cr (string)
+  "Strip carriage-returns (^M) from STRING."
+  (replace-regexp-in-string "\r" "" string))
 
 (defun xjira--get-url (path host auth)
   "Retrieve PATH using AUTH from HOST."
@@ -51,9 +74,6 @@
     (with-temp-buffer
       (url-insert-file-contents jira-url)
       (json-parse-buffer :object-type 'alist))))
-
-(defvar xjira--org-capture-latest-issue-result nil
-  "Stores the latest result of an org capture process.")
 
 (defun xjira--get-issue (issue host auth)
   "Fetch ISSUE from HOST using AUTH.
@@ -71,25 +91,7 @@ The result is an alist with issue, issue-type, title, reporter and description a
       (description . ,description)
       (raw . ,jira-result))))
 
-(defun xjira--obj-or-null (obj)
-  "Return OBJ as is unless it is :null, in which case return the empty string."
-  (if (eq :null obj) "" obj))
-
-(defun xjira--get-last (symbol)
-  "Get SYMBOL from the last captured Jira ticket conveniently."
-  (xjira--obj-or-null (alist-get symbol xjira--org-capture-latest-issue-result)))
-
-(defun xjira--strip-cr (string)
-  "Strip carriage-returns (^M) from STRING."
-  (replace-regexp-in-string "\r" "" string))
-
-;;; Public API:
-
-(defvar xjira-host nil
-  "The protocol and host of your Jira instance, without a final slash, e.g. `http://my-jira'.")
-
-(defvar xjira-auth nil
-  "Your base64 encoded username:password string to access the Jira REST API.")
+; Public:
 
 (defun xjira-org-capture-issue (&optional project)
   "Prompt for an issue number and retrieve it from Jira PROJECT.
