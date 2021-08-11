@@ -14,8 +14,8 @@
 ;; This file is not part of GNU Emacs.
 ;;
 ;;; Commentary:
-;;  Interact with Jira. This library requires Emacs be built with
-;;  libjansson support. Use
+;;  Interact with Jira.  This library requires Emacs be
+;;  built with libjansson support.  Use
 ;;
 ;;    (functionp 'json-parse-buffer)
 ;;
@@ -67,6 +67,7 @@
 
 (defun xjira--get-url (path host auth)
   "Retrieve PATH using AUTH from HOST."
+  (defvar url-request-extra-headers) ; dynamic binding
   (let* ((jira-url (concat host "/rest/api/2/" path))
          (jira-auth (concat "Basic " auth))
          (url-request-extra-headers `(("Content-Type" . "application/json")
