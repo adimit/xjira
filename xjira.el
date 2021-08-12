@@ -57,9 +57,11 @@
   "Return OBJ as is unless it is :null, in which case return the empty string."
   (if (eq :null obj) "" obj))
 
-(defun xjira--strip-cr (string)
-  "Strip carriage-returns (^M) from STRING."
-  (replace-regexp-in-string "\r" "" string))
+(defun xjira--strip-cr (obj)
+  "Strip carriage-returns (^M) from OBJ."
+  (if (stringp obj)
+      (replace-regexp-in-string "\r" "" obj)
+    obj))
 
 (defun xjira--get-url (path host auth)
   "Retrieve PATH using AUTH from HOST."

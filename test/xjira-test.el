@@ -38,6 +38,20 @@
         (should (equal .reporter "The Reporter"))
         (should (equal .description "The description")))))
 
+(ert-deftest xjira-get ()
+  "Should return empty string when result is :null."
+  ; dynamic scoping
+  (defvar xjira--org-capture-latest-issue-result)
+  (let ((xjira--org-capture-latest-issue-result '((description . :null))))
+    (should (equal (xjira-get 'description) "")))
+  (let ((xjira--org-capture-latest-issue-result '((title . "foo"))))
+    (should (equal (xjira-get 'title) "foo"))))
+
+(ert-deftest xjira--strip-cr ()
+  "Should strip carriage returns from strings and ignore everything else."
+  (should (equal (xjira--strip-cr "foo") "foo"))
+  (should (equal (xjira--strip-cr :null) :null)))
+
 (provide 'xjira-test)
 
 ;;; xjira-test.el ends here
