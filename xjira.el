@@ -9,7 +9,7 @@
 ;; Version: 0.1.0
 ;; Keywords: tools, comm
 ;; Homepage: https://github.com/adimit/xjira
-;; Package-Requires: ((emacs "27.1"))
+;; Package-Requires: ((emacs "27.1") let-alist)
 ;;
 ;; This file is not part of GNU Emacs.
 ;;
@@ -76,21 +76,22 @@
       (url-insert-file-contents jira-url)
       (json-parse-buffer :object-type 'alist))))
 
+(defun xjira--parse-issue (issue-data)
+  "Parse ISSUE-DATA.
+Creates an alist with issue, issue-type, title, reporter, and
+description fileds.  Also includes a raw field that contains ISSUE-DATA."
+  (let-alist issue-data
+    `((issue . ,.key)
+      (issue-type . ,.fields.issuetype.name)
+      (title . ,.fields.summary)
+      (reporter . ,.fields.reporter.displayName)
+      (description . ,(xjira--strip-cr .fields.description))
+      (raw . ,issue-data))))
+
 (defun xjira--get-issue (issue host auth)
   "Fetch ISSUE from HOST using AUTH.
 The result is an alist with issue, issue-type, title, reporter and description assocs."
-  (let* ((jira-result (xjira--get-url (concat "issue/" issue) host auth))
-         (issue (alist-get 'key jira-result))
-         (issue-type (alist-get 'name (alist-get 'issuetype (alist-get 'fields jira-result))))
-         (title (alist-get 'summary (alist-get 'fields jira-result)))
-         (reporter (alist-get 'displayName (alist-get 'reporter (alist-get 'fields jira-result))))
-         (description (alist-get 'description (alist-get 'fields jira-result))))
-    `((issue . ,issue)
-      (issue-type . ,issue-type)
-      (title . ,title)
-      (reporter . ,reporter)
-      (description . ,description)
-      (raw . ,jira-result))))
+  (xjira--parse-issue (xjira--get-url (concat "issue/" issue) host auth)))
 
 ; Public:
 
