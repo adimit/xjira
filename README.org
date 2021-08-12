@@ -2,16 +2,34 @@
 
 A small Emacs package that allows you to define an entry in =org-capture-templates= that will fetch a Jira issue's information.
 
+This is very much a scratch-my-own-itch package and provided as-is.
+It depends on =let-alist= and Emacs ≥ 27.1, built with =libjansson=
+support.
+
 * Setup
 
 Here's an example capture template:
 
 #+begin_src emacs-lisp
-("t" "Test" entry (file+headline my-org-work-file "Tasks")
- "* TODO %(xjira-org-capture-issue \"KNUTH\") %(xjira-get-captured-issue) %(xjira-get-captured-title)\nSCHEDULED: %t\n:PROPERTIES:\n:REFERENCE: %(eval xjira-host)/browse/%(xjira-get-captured-issue)\n:Reporter: %(xjira-get-captured-reporter)\n:END:\n%?%(xjira-get-captured-description)")
+  (customize-set-variable
+   'org-capture-templates
+   `(("c" "Get Issue from Jira" entry)
+     (file+regexp your-org-file some-regexp)
+     ,(string-join
+       '("* TODO %(xjira-org-capture-issue \"PROJECT\") %(xjira-get-captured-issue) %(xjira-get-captured-title)"
+         "SCHEDULED: %t"
+         ":PROPERTIES:"
+         ":REFERENCE: %(eval xjira-host)/browse/%(xjira-get-captured-issue)"
+         ":Reporter: %(xjira-get-captured-reporter)"
+         ":END:"
+         "%?"
+         "%(xjira-get-captured-description)")
+       "\n")))
 #+end_src
 
-This is very much a scratch-my-own-itch package and provided as-is. It does not have any dependencies outside of Emacs 27.1.
+=xjira-org-capture-issue= asks you for an issue number and then fetches the required information from Jira via REST. You can then use the various =xjira-get= functions to retrieve the contents of the issue.
+
+Be sure to substitute =PROJECT= for your company's chosen cryptic Jira project shorthand. If you don't pass a string to =xjira-org-capture-issue=, you will be prompted for the project every time you capture something.
 
 * Authentication
 
