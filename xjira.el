@@ -26,13 +26,13 @@
 ;;  for their values as soon as you try to use any function.
 ;;  Use `xjira-get-issue' to download issue information from a Jira instance.
 ;;
-;;  The authentication needs to be provided in base64 encoded form. Use something like
+;;  To obfuscate the authentication, use something like `base64-encode-region' or
 ;;
 ;;    echo -n "abc:password" | base64
 ;;
-;;  to create it. But be aware that this will leave your password in your shell history
-;;  and that base64 is just obfuscated plain text, so everybdoy who has this
-;;  string has your credentials.
+;;  But be aware that the latter will leave your password in your
+;;  shell history and that base64 is just obfuscated plain text, so
+;;  everybdoy who has this string has your credentials.
 ;;
 ;;  You can also create a temporary file with the above string and base64 encode
 ;;  that. This bypasses the shell history. Just make sure the editor does not

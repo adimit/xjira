@@ -1,10 +1,31 @@
 #+TITLE: XJIRA
 
-A small Emacs package that allows you to define an entry in =org-capture-templates= that will fetch a Jira issue's information. Here's an example capture template:
+A small Emacs package that allows you to define an entry in =org-capture-templates= that will fetch a Jira issue's information.
+
+* Setup
+
+Here's an example capture template:
 
 #+begin_src emacs-lisp
 ("t" "Test" entry (file+headline my-org-work-file "Tasks")
  "* TODO %(xjira-org-capture-issue \"KNUTH\") %(xjira-get-captured-issue) %(xjira-get-captured-title)\nSCHEDULED: %t\n:PROPERTIES:\n:REFERENCE: %(eval xjira-host)/browse/%(xjira-get-captured-issue)\n:Reporter: %(xjira-get-captured-reporter)\n:END:\n%?%(xjira-get-captured-description)")
 #+end_src
 
-This is very much a scratch-my-own-itch package and provided as-is. It does not have any dependencies.
+This is very much a scratch-my-own-itch package and provided as-is. It does not have any dependencies outside of Emacs 27.1.
+
+* Authentication
+
+You need to set two variables (you'll be prompted for them each time if you haven't.)
+
+#+begin_src emacs-lisp
+  (setq xjira-auth "user:pass")
+  (setq xjira-host "http://exapmle.com")
+#+end_src
+
+You can base64-encode the auth by marking it as a region and using =base64-encode-region= from inside Emacs. Or you can use
+
+#+begin_src shell
+  echo -n "user:pass" | base64 -
+#+end_src
+
+but be aware that this puts your password in your shell history.
