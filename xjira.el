@@ -57,10 +57,6 @@
   "Return OBJ as is unless it is :null, in which case return the empty string."
   (if (eq :null obj) "" obj))
 
-(defun xjira--get-last (symbol)
-  "Get SYMBOL from the last captured Jira ticket conveniently."
-  (xjira--obj-or-null (alist-get symbol xjira--org-capture-latest-issue-result)))
-
 (defun xjira--strip-cr (string)
   "Strip carriage-returns (^M) from STRING."
   (replace-regexp-in-string "\r" "" string))
@@ -109,21 +105,9 @@ without inserting any text."
           (xjira--get-issue issue-number xjira-host xjira-auth)))
   nil)
 
-(defun xjira-get-captured-issue ()
-  "Get the last captured jira issue."
-  (xjira--get-last 'issue))
-
-(defun xjira-get-captured-description ()
-  "Get the last captured jira issue description."
-  (xjira--strip-cr (xjira--get-last 'description)))
-
-(defun xjira-get-captured-reporter ()
-  "Get the last captured jira issue reporter."
-  (xjira--get-last 'reporter))
-
-(defun xjira-get-captured-title ()
-  "Get the last captured jira issue title."
-  (xjira--get-last 'title))
+(defun xjira-get (symbol)
+  "Get SYMBOL from the last captured Jira ticket."
+  (xjira--obj-or-null (alist-get symbol xjira--org-capture-latest-issue-result)))
 
 (provide 'xjira)
 ;;; xjira.el ends here

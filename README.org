@@ -16,14 +16,14 @@ Here's an example capture template:
    `(("c" "Get Issue from Jira" entry)
      (file+regexp your-org-file some-regexp)
      ,(string-join
-       '("* TODO %(xjira-org-capture-issue \"PROJECT\") %(xjira-get-captured-issue) %(xjira-get-captured-title)"
+       '("* TODO %(xjira-org-capture-issue \"PROJECT\") %(xjira-get 'issue) %(xjira-get 'title)"
          "SCHEDULED: %t"
          ":PROPERTIES:"
-         ":REFERENCE: %(eval xjira-host)/browse/%(xjira-get-captured-issue)"
-         ":Reporter: %(xjira-get-captured-reporter)"
+         ":REFERENCE: %(eval xjira-host)/browse/%(xjira-get 'issue)"
+         ":Reporter: %(xjira-get 'reporter)"
          ":END:"
          "%?"
-         "%(xjira-get-captured-description)")
+         "%(xjira-get 'description)")
        "\n")))
 #+end_src
 
