@@ -84,6 +84,8 @@ description fileds.  Also includes a raw field that contains ISSUE-DATA."
       (title . ,.fields.summary)
       (reporter . ,.fields.reporter.displayName)
       (description . ,(xjira--strip-cr .fields.description))
+      (parent . ,.fields.parent.key)
+      (parent-title . ,.fields.parent.fields.summary)
       (raw . ,issue-data))))
 
 (defun xjira--get-issue (issue host auth)
