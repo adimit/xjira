@@ -14,30 +14,61 @@
 ;; This file is not part of GNU Emacs.
 ;;
 ;;; Commentary:
-;;  Interact with Jira.  This library requires Emacs be
-;;  built with libjansson support.  Use
+;;
+;;  Capture Jira-issues as org-mode items.
+;;
+;;; Description:
+;;
+;;  First, set `xjira-host' and `xjira-auth'. If they're unset, you will be prompted
+;;  for their values as soon as you try to use any function.
+;;
+;;  Use `xjira-org-capture-issue' in your capture templates to capture an org mode
+;;  headline from a Jira issue. Using `xjira-get', you can query items from the alist stored in
+;;  `xjira--org-capture-latest-issue-result'
+;;
+;;  Here's an example capture template:
+;;
+;;     ("j" "Add MP Jira ticket" entry
+;;      (file+headline my-org-work-file "Tasks")
+;;      ,(join-lines
+;;        '("* TODO %(xjira-org-capture-issue \"MYPROJ\") %(xjira-get 'issue) %(xjira-get 'title)"
+;;          "SCHEDULED: %t"
+;;          ":PROPERTIES:"
+;;          ":REFERENCE: %(eval xjira-host)/browse/%(xjira-get 'issue)"
+;;          ":Reporter: %(xjira-get 'reporter)"
+;;          ":Parent: [[%(eval xjira-host)/browse/%(xjira-get 'parent)][%(xjira-get 'parent-title)]]"
+;;          ":END:"
+;;          ""
+;;          "%(xjira-get 'description)")))
+;;
+;;  You can also use `xjira-get-issue' to download issue information from a Jira instance.
+;;
+;;; Authentication:
+;;
+;;  Jira supports basic auth using the username:password scheme. Jira Cloud allows you to use the
+;;  same basic auth, but you need to use a token instead of your password.
+;;  Token based auth will work with SAML and 2FA enabled. Create a Jira Cloud token here:
+;;
+;;  https://id.atlassian.com/manage-profile/security/api-tokens
+;;
+;;  To set `xjira-auth', use
+;;
+;;    (let ((username "your-jira-username")
+;;          (password "your password or token"))
+;;     (custom-set-variables
+;;      '(xjira-auth (base64-encode-string (format "%s:%s" username password) 'no-line-break))))
+;;
+;;  But be aware that base64 is just obfuscated plain text, so
+;;  everybdoy who has this string has your credentials.
+;;
+;;; Dependencies:
+;;
+;;  This library requires Emacs be built with libjansson support.  Use
 ;;
 ;;    (functionp 'json-parse-buffer)
 ;;
 ;;  to check if yours is.
-;;
-;;; Description:
-;;  First, set `xjira-host' and `xjira-auth'. If they're unset, you will be prompted
-;;  for their values as soon as you try to use any function.
-;;  Use `xjira-get-issue' to download issue information from a Jira instance.
-;;
-;;  To obfuscate the authentication, use something like `base64-encode-region' or
-;;
-;;    echo -n "abc:password" | base64
-;;
-;;  But be aware that the latter will leave your password in your
-;;  shell history and that base64 is just obfuscated plain text, so
-;;  everybdoy who has this string has your credentials.
-;;
-;;  You can also create a temporary file with the above string and base64 encode
-;;  that. This bypasses the shell history. Just make sure the editor does not
-;;  sneak in a final newline. Use hexdump -C to check.
-;;
+
 ;;; Code:
 
 ; Configuration:
