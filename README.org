@@ -27,23 +27,26 @@ Here's an example capture template:
        "\n")))
 #+end_src
 
-=xjira-org-capture-issue= asks you for an issue number and then fetches the required information from Jira via REST. You can then use the various =xjira-get= functions to retrieve the contents of the issue.
+=xjira-org-capture-issue= asks you for an issue number and then fetches the required information from Jira via REST. You can then use  =xjira-get= to retrieve the contents of the issue.
 
 Be sure to substitute =PROJECT= for your company's chosen cryptic Jira project shorthand. If you don't pass a string to =xjira-org-capture-issue=, you will be prompted for the project every time you capture something.
 
 * Authentication
 
-You need to set two variables (you'll be prompted for them each time if you haven't.)
+Jira supports basic auth using the =username:password= scheme. Jira
+Cloud allows you to use the same basic auth, but you need to use a
+token instead of your password.  Token based auth will work with SAML
+and 2FA enabled. Create a Jira Cloud token [[https://id.atlassian.com/manage-profile/security/api-tokens][here]].
+
+To set =xjira-auth=, use
 
 #+begin_src emacs-lisp
-  (setq xjira-auth "user:pass")
-  (setq xjira-host "http://exapmle.com")
+  (let ((username "your-jira-username")
+        (password "your password or token"))
+   (custom-set-variables
+    '(xjira-auth (base64-encode-string (format "%s:%s" username password) 'no-line-break))))
 #+end_src
 
-You can base64-encode the auth by marking it as a region and using =base64-encode-region= from inside Emacs. Or you can use
-
-#+begin_src shell
-  echo -n "user:pass" | base64 -
-#+end_src
-
-but be aware that this puts your password in your shell history.
+Jira Cloud with SAML or 2FA will only work with tokens, not with
+passwords.  Be aware that base64 is just obfuscated plain text, so
+everybody who has this string has your credentials.

@@ -59,7 +59,7 @@
 ;;      '(xjira-auth (base64-encode-string (format "%s:%s" username password) 'no-line-break))))
 ;;
 ;;  But be aware that base64 is just obfuscated plain text, so
-;;  everybdoy who has this string has your credentials.
+;;  everybody who has this string has your credentials.
 ;;
 ;;; Dependencies:
 ;;
