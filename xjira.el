@@ -39,7 +39,7 @@
 ;; Version: 0.1.0
 ;; Keywords: tools, comm
 ;; Homepage: https://github.com/adimit/xjira
-;; Package-Requires: ((emacs "27.1") let-alist)
+;; Package-Requires: ((emacs "27.1") let-alist auth-source)
 ;;
 ;; This file is not part of GNU Emacs.
 ;;
@@ -49,7 +49,7 @@
 ;;
 ;;; Description:
 ;;
-;;  First, set `xjira-host' and `xjira-auth'. If they're unset, you will be prompted
+;;  First, set `xjira-host' and `xjira-user'. If they're unset, you will be prompted
 ;;  for their values as soon as you try to use any function.
 ;;
 ;;  Use `xjira-org-capture-issue' in your capture templates to capture an org mode
@@ -58,7 +58,7 @@
 ;;
 ;;  Here's an example capture template:
 ;;
-;;     ("j" "Add MP Jira ticket" entry
+;;     ("j" "Add Jira ticket" entry
 ;;      (file+headline my-org-work-file "Tasks")
 ;;      ,(join-lines
 ;;        '("* TODO %(xjira-org-capture-issue \"MYPROJ\") %(xjira-get 'issue) %(xjira-get 'title)"
@@ -81,15 +81,12 @@
 ;;
 ;;  https://id.atlassian.com/manage-profile/security/api-tokens
 ;;
-;;  To set `xjira-auth', use
+;;  Use auth-source to store your secret with your username and password. For example, you can use
+;;  pass with an entry like this:
 ;;
-;;    (let ((username "your-jira-username")
-;;          (password "your password or token"))
-;;     (custom-set-variables
-;;      '(xjira-auth (base64-encode-string (format "%s:%s" username password) 'no-line-break))))
-;;
-;;  But be aware that base64 is just obfuscated plain text, so
-;;  everybody who has this string has your credentials.
+;;    my-super-secret-key
+;;    url: https://my-company.atlassian.net
+;;    login: my-address@my-company.com
 ;;
 ;;; Dependencies:
 ;;
@@ -98,10 +95,14 @@
 ;;    (functionp 'json-parse-buffer)
 ;;
 ;;  to check if yours is.
+;;
+;;  We also require auth-source.
 
 ;;; Code:
 
-; Configuration:
+(require 'auth-source)
+
+                                        ; Configuration:
 
 (defvar xjira--org-capture-latest-issue-result nil
   "Stores the latest result of an org capture process.")
@@ -109,10 +110,10 @@
 (defvar xjira-host nil
   "The protocol and host of your Jira instance, without a final slash, e.g. `http://my-jira'.")
 
-(defvar xjira-auth nil
-  "Your base64 encoded username:password string to access the Jira REST API.")
+(defvar xjira-user nil
+  "Your username on xjira-host, usually your Email, or maybe a nickname.")
 
-; Private:
+                                        ; Private:
 
 (defun xjira--obj-or-null (obj)
   "Return OBJ as is unless it is :null, in which case return the empty string."
@@ -151,10 +152,18 @@ description fileds.  Also includes a raw field that contains ISSUE-DATA."
 
 (defun xjira--get-issue (issue host auth)
   "Fetch ISSUE from HOST using AUTH.
-The result is an alist with issue, issue-type, title, reporter and description assocs."
+The result is an alist with issue, issue-type, title, reporter and
+description assocs."
   (xjira--parse-issue (xjira--get-url (concat "issue/" issue) host auth)))
 
-; Public:
+(defun xjira--get-secret (user host)
+  "Get secret on Jira HOST for USER from auth-source."
+  (let* ((secret (plist-get (nth 0 (auth-source-search :user user :host host)) :secret))
+         (token (if (functionp secret)
+                    (funcall secret)
+                  secret)))
+    (base64-encode-string (format "%s:%s" user token) 'no-line-break)))
+                                        ; Public:
 
 (defun xjira-org-capture-issue (&optional project)
   "Prompt for an issue number and retrieve it from Jira PROJECT.
@@ -162,12 +171,15 @@ Will the issue's details for later use with `xjira-get*' functions.
 Will return nil as to allow for calling it at the start of a capture template
 without inserting any text."
   (interactive)
-  (let* ((project (if project project (read-string "Jira project: ")))
-         (issue-number (concat project "-" (read-string (concat project "-")))))
-    (unless xjira-host (setq xjira-host (read-string "Jira host (e.g. http://my-jira): ")))
-    (unless xjira-auth (setq xjira-auth (read-string "Jira auth (echo -n user:pass | base64 -): ")))
-    (setq xjira--org-capture-latest-issue-result
-          (xjira--get-issue issue-number xjira-host xjira-auth)))
+  (let* ((host (if xjira-host xjira-host (read-string "Jira host (e.g. http://my-jira): ")))
+         (user (if xjira-user xjira-user (read-string "Jira user (e.g. jane@example.com): ")))
+         (auth (xjira--get-secret user host)))
+    (if auth
+        (let* ((project (if project project (read-string "Jira project: ")))
+               (issue-number (concat project "-" (read-string (concat project "-")))))
+          (setq xjira--org-capture-latest-issue-result
+                (xjira--get-issue issue-number host auth)))
+      (error "Could not find secret in auth-source")))
   nil)
 
 (defun xjira-get (symbol)
