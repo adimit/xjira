@@ -187,6 +187,12 @@ without inserting any text."
       (error "Could not find secret in auth-source")))
   nil)
 
+(defun xjira-make-org-link (issue title)
+  "Make an org link for a jira ticket with ISSUE key & TITLE.
+
+Relies on `xjira-host' being defined."
+  (concat "[[" xjira-host "/browse/" issue "][" issue ": " title "]]"))
+
 (defun xjira-get (symbol)
   "Get SYMBOL from the last captured Jira ticket."
   (xjira--obj-or-null (alist-get symbol xjira--org-capture-latest-issue-result)))
