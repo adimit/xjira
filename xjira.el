@@ -176,9 +176,14 @@ without inserting any text."
          (auth (xjira--get-secret user host)))
     (if auth
         (let* ((project (if project project (read-string "Jira project: ")))
-               (issue-number (concat project "-" (read-string (concat project "-")))))
-          (setq xjira--org-capture-latest-issue-result
-                (xjira--get-issue issue-number host auth)))
+               (issue-number (concat project "-" (read-string (concat project "-"))))
+               (jira-issue (xjira--get-issue issue-number host auth))
+               (parent-key (alist-get 'parent jira-issue))
+               (parent-issue (xjira--get-issue parent-key host auth)))
+          (progn
+            (push `(epic . ,(let-alist parent-issue .parent)) jira-issue)
+            (push `(epic-title . ,(let-alist parent-issue .parent-title)) jira-issue))
+          (setq xjira--org-capture-latest-issue-result jira-issue))
       (error "Could not find secret in auth-source")))
   nil)
 
