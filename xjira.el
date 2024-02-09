@@ -113,6 +113,9 @@
 (defvar xjira-user nil
   "Your username on xjira-host, usually your Email, or maybe a nickname.")
 
+(defvar xjira-project nil
+  "The short project name for your default project.")
+
                                         ; Private:
 
 (defun xjira--obj-or-null (obj)
@@ -165,26 +168,30 @@ description assocs."
     (base64-encode-string (format "%s:%s" user token) 'no-line-break)))
                                         ; Public:
 
+(defun xjira--get-project (&optional project)
+  "Either return PROJECT or the value of `xjira-project' or prompt for a project."
+  (if project project
+    (if xjira-project xjira-project
+      (read-string "Jira project: "))))
+
 (defun xjira-org-capture-issue (&optional project)
   "Prompt for an issue number and retrieve it from Jira PROJECT.
-Will the issue's details for later use with `xjira-get*' functions.
+
+Will save the issue's details for later use with `xjira-get*' functions.
 Will return nil as to allow for calling it at the start of a capture template
 without inserting any text."
   (interactive)
-  (let* ((host (if xjira-host xjira-host (read-string "Jira host (e.g. http://my-jira): ")))
-         (user (if xjira-user xjira-user (read-string "Jira user (e.g. jane@example.com): ")))
-         (auth (xjira--get-secret user host)))
-    (if auth
-        (let* ((project (if project project (read-string "Jira project: ")))
-               (issue-number (concat project "-" (read-string (concat project "-"))))
-               (jira-issue (xjira--get-issue issue-number host auth))
-               (parent-key (alist-get 'parent jira-issue))
-               (parent-issue (xjira--get-issue parent-key host auth)))
-          (progn
-            (push `(epic . ,(let-alist parent-issue .parent)) jira-issue)
-            (push `(epic-title . ,(let-alist parent-issue .parent-title)) jira-issue))
-          (setq xjira--org-capture-latest-issue-result jira-issue))
-      (error "Could not find secret in auth-source")))
+  (xjira--with-auth
+   (lambda (host auth)
+     (let* ((project (xjira--get-project project))
+            (issue-number (xjira--prompt-for-issue project))
+            (jira-issue (xjira--get-issue issue-number host auth))
+            (parent-key (alist-get 'parent jira-issue))
+            (parent-issue (xjira--get-issue parent-key host auth)))
+       (progn
+         (push `(epic . ,(let-alist parent-issue .parent)) jira-issue)
+         (push `(epic-title . ,(let-alist parent-issue .parent-title)) jira-issue))
+       (setq xjira--org-capture-latest-issue-result jira-issue))))
   nil)
 
 (defun xjira-make-org-link (issue title)
@@ -196,6 +203,30 @@ Relies on `xjira-host' being defined."
 (defun xjira-get (symbol)
   "Get SYMBOL from the last captured Jira ticket."
   (xjira--obj-or-null (alist-get symbol xjira--org-capture-latest-issue-result)))
+
+(defun xjira--prompt-for-issue (project)
+  "Prompt for an issue number in PROJECT."
+  (let ((prefix (concat project "-")))
+    (concat prefix (read-string prefix))))
+
+(defun xjira--with-auth (body)
+  "Execute BODY passing variables auth and host to it."
+  (let* ((host (if xjira-host xjira-host (read-string "Jira host (e.g. http://my-jira): ")))
+         (user (if xjira-user xjira-user (read-string "Jira user (e.g. jane@example.com): ")))
+         (auth (xjira--get-secret user host)))
+    (if auth
+        (funcall body host auth)
+      (error "Could not find secret in auth-source"))))
+
+(defun xjira-org-insert-link-to-issue (&optional project)
+  "Insert an org HTTP link to ISSUE in PROJECT."
+  (interactive)
+  (xjira--with-auth
+   (lambda (host auth)
+     (let* ((project (xjira--get-project project))
+            (issue-number (xjira--prompt-for-issue project))
+            (jira-issue (xjira--get-issue issue-number host auth)))
+       (insert (xjira-make-org-link issue-number (alist-get 'title jira-issue)))))))
 
 (provide 'xjira)
 ;;; xjira.el ends here
