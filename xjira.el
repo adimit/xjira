@@ -122,6 +122,12 @@
   "Return OBJ as is unless it is :null, in which case return the empty string."
   (if (eq :null obj) "" obj))
 
+(defun xjira--atlassian-markup-to-org (string)
+  "Use pandoc to transform STRING from atlassian markup to org mode markup."
+  (with-temp-buffer
+    (call-process-region string nil "pandoc" nil t nil "--from=jira" "--to=org")
+    (buffer-string)))
+
 (defun xjira--strip-cr (obj)
   "Strip carriage-returns (^M) from OBJ."
   (if (stringp obj)
@@ -139,6 +145,13 @@
       (url-insert-file-contents jira-url)
       (json-parse-buffer :object-type 'alist))))
 
+(defun xjira--process-description (str)
+  "Process STR to remove unwanted characters."
+  (let ((stripped (xjira--strip-cr str)))
+    (if (executable-find "pandoc")
+        (xjira--atlassian-markup-to-org stripped)
+      stripped)))
+
 (defun xjira--parse-issue (issue-data)
   "Parse ISSUE-DATA.
 Creates an alist with issue, issue-type, title, reporter, and
@@ -148,7 +161,7 @@ description fileds.  Also includes a raw field that contains ISSUE-DATA."
       (issue-type . ,.fields.issuetype.name)
       (title . ,.fields.summary)
       (reporter . ,.fields.reporter.displayName)
-      (description . ,(xjira--strip-cr .fields.description))
+      (description . ,.fields.description)
       (parent . ,.fields.parent.key)
       (parent-title . ,.fields.parent.fields.summary)
       (raw . ,issue-data))))
@@ -187,10 +200,12 @@ without inserting any text."
             (issue-number (xjira--prompt-for-issue project))
             (jira-issue (xjira--get-issue issue-number host auth))
             (parent-key (alist-get 'parent jira-issue))
-            (parent-issue (xjira--get-issue parent-key host auth)))
+            (parent-issue (xjira--get-issue parent-key host auth))
+            (parsed-description (xjira--process-description (alist-get 'description jira-issue))))
        (progn
          (push `(epic . ,(let-alist parent-issue .parent)) jira-issue)
-         (push `(epic-title . ,(let-alist parent-issue .parent-title)) jira-issue))
+         (push `(epic-title . ,(let-alist parent-issue .parent-title)) jira-issue)
+         (push `(description . ,parsed-description) jira-issue))
        (setq xjira--org-capture-latest-issue-result jira-issue))))
   nil)
 
