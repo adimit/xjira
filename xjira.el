@@ -124,9 +124,11 @@
 
 (defun xjira--atlassian-markup-to-org (string)
   "Use pandoc to transform STRING from atlassian markup to org mode markup."
-  (with-temp-buffer
-    (call-process-region string nil "pandoc" nil t nil "--from=jira" "--to=org")
-    (buffer-string)))
+  (if (eq string :null)
+      string
+    (with-temp-buffer
+      (call-process-region string nil "pandoc" nil t nil "--from=jira" "--to=org")
+      (buffer-string))))
 
 (defun xjira--strip-cr (obj)
   "Strip carriage-returns (^M) from OBJ."
