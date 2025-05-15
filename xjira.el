@@ -156,7 +156,7 @@
 
 (defun xjira--parse-issue (issue-data)
   "Parse ISSUE-DATA.
-Creates an alist with issue, issue-type, title, reporter, and
+Creates an alist with issue, issue-type, title, reporter, status, and
 description fileds.  Also includes a raw field that contains ISSUE-DATA."
   (let-alist issue-data
     `((issue . ,.key)
@@ -166,6 +166,7 @@ description fileds.  Also includes a raw field that contains ISSUE-DATA."
       (description . ,.fields.description)
       (parent . ,.fields.parent.key)
       (parent-title . ,.fields.parent.fields.summary)
+      (status . ,.fields.status.name)
       (raw . ,issue-data))))
 
 (defun xjira--get-issue (issue host auth)
