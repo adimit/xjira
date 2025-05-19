@@ -71,7 +71,7 @@
 ;;          ""
 ;;          "%(xjira-get 'description)")))
 ;;
-;;  You can also use `xjira-get-issue' to download issue information from a Jira instance.
+;;  You can also use `xjira--get-issue' to download issue information from a Jira instance.
 ;;
 ;;; Authentication:
 ;;
@@ -101,6 +101,7 @@
 ;;; Code:
 
 (require 'auth-source)
+(require 'org)
 
                                         ; Configuration:
 
@@ -139,7 +140,7 @@
 (defun xjira--get-url (path host auth)
   "Retrieve PATH using AUTH from HOST."
   (defvar url-request-extra-headers) ; dynamic binding
-  (let* ((jira-url (concat host "/rest/api/2/" path))
+  (let* ((jira-url (concat host "/rest/api/3/" path))
          (jira-auth (concat "Basic " auth))
          (url-request-extra-headers `(("Content-Type" . "application/json")
                                       ("Authorization" . ,jira-auth))))
@@ -236,6 +237,14 @@ Relies on `xjira-host' being defined."
         (funcall body host auth)
       (error "Could not find secret in auth-source"))))
 
+(defun xjira--get-issue-key-at-point ()
+  "Return the issue key at point in the current org buffer or NIL."
+  (let ((link (org-entry-get (point) "REFERENCE" 't)))
+    (and
+     link
+     (string-match (concat xjira-host "/browse/\\([^]]*\\)") link)
+     (match-string 1 link))))
+
 (defun xjira-org-insert-link-to-issue (&optional project)
   "Insert an org HTTP link to ISSUE in PROJECT."
   (interactive)
@@ -245,6 +254,41 @@ Relies on `xjira-host' being defined."
             (issue-number (xjira--prompt-for-issue project))
             (jira-issue (xjira--get-issue issue-number host auth)))
        (insert (xjira-make-org-link issue-number (alist-get 'title jira-issue)))))))
+
+(defun xjira--transition-issue (issue)
+  "Transition ISSUE to a new status using completing read."
+  (xjira--with-auth
+   (lambda (host auth)
+     (let* ((transitions-url (concat "issue/" issue "/transitions"))
+            (completions
+             (let-alist (xjira--get-url transitions-url host auth)
+               (seq-map (lambda (transition) (let-alist transition `(,.name ,.id))) .transitions)))
+            (transition
+             (assoc (completing-read "Choose a status: " completions nil 't) completions))
+            (post-document `((transition (id . ,(cadr transition))))))
+       (and (xjira--post-url transitions-url post-document host auth)
+            (car transition))))))
+
+(defun xjira-transition-issue-at-point ()
+  "Transition the Jira issue associate with the current subtree."
+  (interactive)
+  (org-entry-put (point) "Status"
+                 (xjira--transition-issue (xjira--get-issue-key-at-point))))
+
+(defun xjira--post-url (path body host auth)
+  "Post BODY to PATH using AUTH on HOST."
+  (defvar url-request-extra-headers) ; dynamic binding
+  (defvar url-request-method)
+  (defvar url-request-data)
+  (let* ((jira-url (concat host "/rest/api/3/" path))
+         (jira-auth (concat "Basic " auth))
+         (url-request-method "POST")
+         (url-request-data (json-encode body))
+         (url-request-extra-headers `(("Content-Type" . "application/json")
+                                      ("Authorization" . ,jira-auth))))
+    (with-temp-buffer
+      (url-insert-file-contents jira-url)
+      (buffer-string))))
 
 (provide 'xjira)
 ;;; xjira.el ends here
