@@ -157,9 +157,9 @@
 
 (defun xjira--get-assignee (assignee)
   "Get name from ASSIGNEE."
-  (if assignee
-      (let-alist assignee .displayName)
-    "No assignee"))
+  (if (eq :null assignee)
+      "Unassigned"
+    (let-alist assignee .displayName)))
 
 (defun xjira--parse-issue (issue-data)
   "Parse ISSUE-DATA.
