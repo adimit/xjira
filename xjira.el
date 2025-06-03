@@ -155,6 +155,12 @@
         (xjira--atlassian-markup-to-org stripped)
       stripped)))
 
+(defun xjira--get-assignee (assignee)
+  "Get name from ASSIGNEE."
+  (if assignee
+      (let-alist assignee .displayName)
+    "No assignee"))
+
 (defun xjira--parse-issue (issue-data)
   "Parse ISSUE-DATA.
 Creates an alist with issue, issue-type, title, reporter, status, and
@@ -168,6 +174,7 @@ description fileds.  Also includes a raw field that contains ISSUE-DATA."
       (parent . ,.fields.parent.key)
       (parent-title . ,.fields.parent.fields.summary)
       (status . ,.fields.status.name)
+      (assignee . ,(xjira--get-assignee .fields.assignee))
       (raw . ,issue-data))))
 
 (defun xjira--get-issue (issue host auth)
@@ -255,25 +262,30 @@ Relies on `xjira-host' being defined."
             (jira-issue (xjira--get-issue issue-number host auth)))
        (insert (xjira-make-org-link issue-number (alist-get 'title jira-issue)))))))
 
-(defun xjira--transition-issue (issue)
-  "Transition ISSUE to a new status using completing read."
-  (xjira--with-auth
-   (lambda (host auth)
-     (let* ((transitions-url (concat "issue/" issue "/transitions"))
-            (completions
-             (let-alist (xjira--get-url transitions-url host auth)
-               (seq-map (lambda (transition) (let-alist transition `(,.name ,.id))) .transitions)))
-            (transition
-             (assoc (completing-read "Choose a status: " completions nil 't) completions))
-            (post-document `((transition (id . ,(cadr transition))))))
-       (and (xjira--post-url transitions-url post-document host auth)
-            (car transition))))))
+(defun xjira--transition-issue (issue host auth)
+  "Prompt transition of ISSUE to a new status using HOST & AUTH."
+  (let* ((transitions-url (concat "issue/" issue "/transitions"))
+         (completions
+          (let-alist (xjira--get-url transitions-url host auth)
+            (seq-map (lambda (transition) (let-alist transition `(,.name ,.id))) .transitions)))
+         (transition
+          (assoc (completing-read "Choose a status: " completions nil 't) completions))
+         (post-document `((transition (id . ,(cadr transition))))))
+    (and (xjira--post-url transitions-url post-document host auth)
+         (car transition))))
 
 (defun xjira-transition-issue-at-point ()
   "Transition the Jira issue associate with the current subtree."
   (interactive)
-  (org-entry-put (point) "Status"
-                 (xjira--transition-issue (xjira--get-issue-key-at-point))))
+  (xjira--with-auth
+   (lambda (host auth)
+     (let ((issue-key (xjira--get-issue-key-at-point)))
+       (org-entry-put (point) "Status"
+                      (xjira--transition-issue issue-key host auth))
+       (org-entry-put (point) "Assignee"
+                      (let-alist
+                          (xjira--get-issue issue-key host auth)
+                        (xjira--get-assignee .raw.fields.assignee)))))))
 
 (defun xjira--post-url (path body host auth)
   "Post BODY to PATH using AUTH on HOST."
