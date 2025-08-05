@@ -184,13 +184,19 @@ description assocs."
   (xjira--parse-issue (xjira--get-url (concat "issue/" issue) host auth)))
 
 (defun xjira--get-secret (user host)
-  "Get secret on Jira HOST for USER from auth-source."
-  (let* ((secret (plist-get (nth 0 (auth-source-search :user user :host host)) :secret))
+  "Get secret on Jira HOST for USER from auth-source.
+
+This will look through auth-source for a match of USER and HOST where
+HOST is what's recorded in `xjira-host', but with the protocol stripped,
+i.e. just the host name."
+  (let* ((secret (plist-get (nth 0 (auth-source-search
+                                    :user user
+                                    :host (replace-regexp-in-string "^https?://" "" host)))
+                            :secret))
          (token (if (functionp secret)
                     (funcall secret)
                   secret)))
-    (base64-encode-string (format "%s:%s" user token) 'no-line-break)))
-                                        ; Public:
+    (base64-encode-string (format "%s:%s" user token) 'no-line-break)))                                        ; Public:
 
 (defun xjira--get-project (&optional project)
   "Either return PROJECT or the value of `xjira-project' or prompt for a project."
@@ -237,7 +243,7 @@ Relies on `xjira-host' being defined."
 
 (defun xjira--with-auth (body)
   "Execute BODY passing variables auth and host to it."
-  (let* ((host (if xjira-host xjira-host (read-string "Jira host (e.g. http://my-jira): ")))
+  (let* ((host (if xjira-host xjira-host (read-string "Jira host URL (e.g. http://my-jira): ")))
          (user (if xjira-user xjira-user (read-string "Jira user (e.g. jane@example.com): ")))
          (auth (xjira--get-secret user host)))
     (if auth
