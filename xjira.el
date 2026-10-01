@@ -293,6 +293,17 @@ Relies on `xjira-host' being defined."
                           (xjira--get-issue issue-key host auth)
                         (xjira--get-assignee .raw.fields.assignee)))))))
 
+(defun xjira-transition-issue-in-agenda-line ()
+  "Transition the Jira issue associated with the entry on the current agenda line."
+  (interactive)
+  (let ((marker (org-get-at-bol 'org-hd-marker)))
+    (unless marker
+      (user-error "No Org entry on this agenda line"))
+    (org-with-point-at marker
+      (unless (xjira--get-issue-key-at-point)
+        (user-error "No Jira issue associated with this entry"))
+      (xjira-transition-issue-at-point))))
+
 (defun xjira--post-url (path body host auth)
   "Post BODY to PATH using AUTH on HOST."
   (defvar url-request-extra-headers) ; dynamic binding
