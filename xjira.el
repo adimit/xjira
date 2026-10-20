@@ -280,9 +280,8 @@ Relies on `xjira-host' being defined."
     (and (xjira--post-url transitions-url post-document host auth)
          (car transition))))
 
-(defun xjira-transition-issue-at-point ()
+(defun xjira--transition-issue-at-point ()
   "Transition the Jira issue associate with the current subtree."
-  (interactive)
   (xjira--with-auth
    (lambda (host auth)
      (let ((issue-key (xjira--get-issue-key-at-point)))
@@ -293,16 +292,22 @@ Relies on `xjira-host' being defined."
                           (xjira--get-issue issue-key host auth)
                         (xjira--get-assignee .raw.fields.assignee)))))))
 
-(defun xjira-transition-issue-in-agenda-line ()
+(defun xjira--transition-issue-in-agenda-line ()
   "Transition the Jira issue associated with the entry on the current agenda line."
-  (interactive)
   (let ((marker (org-get-at-bol 'org-hd-marker)))
     (unless marker
       (user-error "No Org entry on this agenda line"))
     (org-with-point-at marker
       (unless (xjira--get-issue-key-at-point)
         (user-error "No Jira issue associated with this entry"))
-      (xjira-transition-issue-at-point))))
+      (xjira--transition-issue-at-point))))
+
+(defun xjira-transition-issue-dwim ()
+  "Transition the Jira issue for the current org entry or agenda line."
+  (interactive)
+  (cond ((derived-mode-p 'org-agenda-mode) (xjira--transition-issue-in-agenda-line))
+        ((derived-mode-p 'org-mode) (xjira--transition-issue-at-point))
+        (t (user-error "Not in an Org or Org agenda buffer"))))
 
 (defun xjira--post-url (path body host auth)
   "Post BODY to PATH using AUTH on HOST."
